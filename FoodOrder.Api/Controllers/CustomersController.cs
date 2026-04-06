@@ -6,7 +6,7 @@ using FoodOrder.Api.Data;
 using FoodOrder.Api.Repositories.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Logging;
 
 namespace FoodOrder.Api.Controllers
 {
@@ -18,11 +18,13 @@ namespace FoodOrder.Api.Controllers
         private readonly CustomerService _svc;
         private readonly FoodOrderDbContext _db;
         private readonly ICustomerOrderQueries _customerOrderQueries;
+        private readonly ILogger<CustomersController> _logger;
 
-        public CustomersController(CustomerService svc, FoodOrderDbContext db)
+        public CustomersController(CustomerService svc, FoodOrderDbContext db, ILogger<CustomersController> logger)
         {
             _svc = svc;
             _db = db;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -35,11 +37,12 @@ namespace FoodOrder.Api.Controllers
         [HttpGet("{customerId:guid}")]
         public async Task<IActionResult> GetById(Guid customerId, CancellationToken ct)
         {
+            _logger.LogInformation(10, "Fetching customer with ID {CustomerId}", customerId);
             var customer = await _db.Customers.AsNoTracking()
                 .SingleOrDefaultAsync(c => c.CustomerId == customerId, ct);
 
             if (customer is null) return NotFound();
-
+            _logger.LogInformation(10, "Customer found: {CustomerName}", customer.Name);
             return Ok(new { customer.CustomerId, customer.Name });
         }
 
@@ -50,6 +53,12 @@ namespace FoodOrder.Api.Controllers
             var result = await _customerOrderQueries.GetCustomerOrdersAsync(customerId, page, pageSize, ct);
             return Ok(result);
 
+        }
+
+        [HttpGet("hello")]
+        public IActionResult GetHello()
+        {
+            return Content("Hello, this is Dcker Compse", "text/plain");
         }
     }
 
