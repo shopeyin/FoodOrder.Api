@@ -55,10 +55,13 @@ namespace FoodOrder.Api.Controllers
 
         }
 
-        [HttpGet("hello")]
+        [HttpGet("")]
         public IActionResult GetHello()
         {
-            return Content("Hello, this is Dcker Compse", "text/plain");
+            Console.WriteLine("--------*********************------------------------");
+            Console.WriteLine("--------*********************------------------------");
+            Console.WriteLine("--------*********************------------------------");
+            return Content("Hello, this compose", "text/plain");
         }
     }
 

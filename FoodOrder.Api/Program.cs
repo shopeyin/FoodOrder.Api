@@ -41,15 +41,42 @@ using (var scope = app.Services.CreateScope())
     if (env.IsDevelopment())
     {
         var db = scope.ServiceProvider.GetRequiredService<FoodOrderDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-        // Ensures DB + schema are created from migrations
-        await db.Database.MigrateAsync();
+        const int maxRetries = 10;
+        var delay = TimeSpan.FromSeconds(5);
 
-        // Seeds only if empty
-        await SeedData.EnsureSeededAsync(db);
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                logger.LogInformation("Applying database migrations. Attempt {Attempt}/{MaxRetries}", attempt, maxRetries);
+
+                await db.Database.MigrateAsync();
+                await SeedData.EnsureSeededAsync(db);
+
+                logger.LogInformation("Database migration and seeding completed successfully.");
+                break;
+            }
+            catch (Exception ex)
+            {
+                if (attempt == maxRetries)
+                {
+                    logger.LogError(ex, "Database migration failed after {MaxRetries} attempts.", maxRetries);
+                    throw;
+                }
+
+                logger.LogWarning(ex,
+                    "Database not ready yet. Attempt {Attempt}/{MaxRetries}. Retrying in {DelaySeconds} seconds...",
+                    attempt,
+                    maxRetries,
+                    delay.TotalSeconds);
+
+                await Task.Delay(delay);
+            }
+        }
     }
 }
-
 
 app.UseMiddleware<ExceptionMiddleware>();
 

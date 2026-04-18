@@ -1,57 +1,80 @@
-﻿
-using FoodOrder.Api.Data;
+﻿using FoodOrder.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Data.Common;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Testcontainers.MsSql;
+using Xunit.Abstractions;
 
 namespace FoodOrder.Api.IntegrationTests;
 
-public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
+public sealed class CustomWebApplicationFactory
+    : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private DbConnection? _connection;
+    private readonly MsSqlContainer _dbSqlContainer = new MsSqlBuilder().Build();
+    private readonly string _databaseName = "FoodOrderIntegrationTests";
 
+    private string TestDatabaseConnectionString
+    {
+        get
+        {
+            var builder = new SqlConnectionStringBuilder(_dbSqlContainer.GetConnectionString())
+            {
+                InitialCatalog = _databaseName
+            };
+
+            return builder.ConnectionString;
+        }
+    }
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
 
         builder.ConfigureServices(services =>
         {
-            // Remove the app's real AppDbContext registration
-            var dbContextDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<FoodOrderDbContext>));
-
-            if (dbContextDescriptor is not null)
-                services.Remove(dbContextDescriptor);
-
-            // Create one open SQLite in-memory connection for the test host
-            _connection = new SqliteConnection("DataSource=:memory:");
-            _connection.Open();
+            services.RemoveAll(typeof(DbContextOptions<FoodOrderDbContext>));
 
             services.AddDbContext<FoodOrderDbContext>(options =>
             {
-                options.UseSqlite(_connection);
+                options.UseSqlServer(TestDatabaseConnectionString);
             });
-
-            var serviceProvider = services.BuildServiceProvider();
-
-            using var scope = serviceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<FoodOrderDbContext>();
-
-            db.Database.EnsureCreated();
-
-            TestDataSeeder.Seed(db);
         });
     }
 
-    protected override void Dispose(bool disposing)
+    public string GetConnectionString()
     {
-        base.Dispose(disposing);
+        return TestDatabaseConnectionString;
+    }
 
-        if (disposing)
-            _connection?.Dispose();
+    public async Task InitializeAsync()
+    {
+        await _dbSqlContainer.StartAsync();
+
+    }
+
+    async Task IAsyncLifetime.DisposeAsync()
+    {
+        await _dbSqlContainer.DisposeAsync();
+    }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FoodOrderDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<CustomWebApplicationFactory>>();
+
+
+        logger.LogInformation("Resetting test database...");
+       // Console.WriteLine($"EF Database Name: {db.Database.GetDbConnection().Database}");
+
+        await db.Database.EnsureDeletedAsync();
+        await db.Database.MigrateAsync();
+
+        TestDataSeeder.Seed(db);
+
+        logger.LogInformation("Test database reset complete.");
     }
 }
