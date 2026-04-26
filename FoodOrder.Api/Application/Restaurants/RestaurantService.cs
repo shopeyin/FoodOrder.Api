@@ -3,16 +3,19 @@ using FoodOrder.Api.Data;
 using FoodOrder.Api.Domain.Entities;
 using FoodOrder.Api.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FoodOrder.Api.Application.Restaurants
 {
     public class RestaurantService
     {
         private readonly FoodOrderDbContext _db;
+        private readonly ILogger<RestaurantService> _logger;
 
-        public RestaurantService(FoodOrderDbContext db)
+        public RestaurantService(FoodOrderDbContext db, ILogger<RestaurantService> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         public async Task<Guid> CreateRestaurant(string name, CancellationToken ct)
@@ -23,6 +26,7 @@ namespace FoodOrder.Api.Application.Restaurants
             var restaurant = new Restaurant(Guid.NewGuid(), name.Trim());
             _db.Restaurants.Add(restaurant);
             await _db.SaveChangesAsync(ct);
+            _logger.LogInformation("Created restaurant {RestaurantId} with name {RestaurantName}", restaurant.RestaurantId, restaurant.Name);
             return restaurant.RestaurantId;
         }
 
@@ -49,6 +53,11 @@ namespace FoodOrder.Api.Application.Restaurants
             var menuItem = new MenuItem(Guid.NewGuid(), restaurantId, name.Trim(), new Money(price));
             _db.MenuItems.Add(menuItem);
             await _db.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "Added menu item {MenuItemId} to restaurant {RestaurantId} with name {MenuItemName}",
+                menuItem.MenuItemId,
+                restaurantId,
+                menuItem.Name);
 
             return menuItem.MenuItemId;
         }
@@ -74,6 +83,11 @@ namespace FoodOrder.Api.Application.Restaurants
             }
 
             await _db.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "Updated price for menu item {MenuItemId} in restaurant {RestaurantId} to {Price}",
+                menuItemId,
+                restaurantId,
+                price);
         }
 
         public async Task DeactivateMenuItem(Guid restaurantId, Guid menuItemId, CancellationToken ct)
@@ -86,6 +100,7 @@ namespace FoodOrder.Api.Application.Restaurants
 
             menuItem.Deactivate();
             await _db.SaveChangesAsync(ct);
+            _logger.LogInformation("Deactivated menu item {MenuItemId} in restaurant {RestaurantId}", menuItemId, restaurantId);
         }
 
 

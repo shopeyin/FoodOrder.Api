@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Testcontainers.MsSql;
-using Xunit.Abstractions;
 
 namespace FoodOrder.Api.IntegrationTests;
 
@@ -41,6 +40,13 @@ public sealed class CustomWebApplicationFactory
             {
                 options.UseSqlServer(TestDatabaseConnectionString);
             });
+        });
+
+        builder.ConfigureLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddConsole();
+            logging.SetMinimumLevel(LogLevel.Information);
         });
     }
 

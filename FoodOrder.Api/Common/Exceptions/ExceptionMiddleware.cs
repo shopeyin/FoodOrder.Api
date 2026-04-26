@@ -1,11 +1,19 @@
-﻿using FoodOrder.Api.Common.ErrorHandling;
+using FoodOrder.Api.Common.ErrorHandling;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Net;
 
 namespace FoodOrder.Api.Common.Exceptions
 {
     public sealed class ExceptionMiddleware : IMiddleware
     {
+        private readonly ILogger<ExceptionMiddleware> _logger;
+
+        public ExceptionMiddleware(ILogger<ExceptionMiddleware> logger)
+        {
+            _logger = logger;
+        }
+
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             try
@@ -14,15 +22,29 @@ namespace FoodOrder.Api.Common.Exceptions
             }
             catch (KeyNotFoundException ex)
             {
+                _logger.LogWarning(ex,
+                    "Not found error for {Method} {Path}. TraceId: {TraceId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.TraceIdentifier);
                 await WriteProblem(context, HttpStatusCode.NotFound, ex.Message);
             }
             catch (DomainException ex)
             {
+                _logger.LogWarning(ex,
+                    "Domain validation error for {Method} {Path}. TraceId: {TraceId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.TraceIdentifier);
                 await WriteProblem(context, HttpStatusCode.BadRequest, ex.Message);
             }
             catch (Exception ex)
             {
-                // Don’t leak internals in prod
+                _logger.LogError(ex,
+                    "Unhandled exception for {Method} {Path}. TraceId: {TraceId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.TraceIdentifier);
                 await WriteProblem(context, HttpStatusCode.InternalServerError, "An unexpected error occurred.");
             }
         }
@@ -49,3 +71,4 @@ namespace FoodOrder.Api.Common.Exceptions
     }
 
 }
+

@@ -5,6 +5,7 @@ using FoodOrder.Api.Common.Exceptions;
 using FoodOrder.Api.Data;
 using FoodOrder.Api.Repositories.Abstractions;
 using FoodOrder.Api.Repositories.Efcore;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -13,6 +14,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestMethod |
+                            HttpLoggingFields.RequestPath |
+                            HttpLoggingFields.ResponseStatusCode |
+                            HttpLoggingFields.Duration;
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -78,6 +86,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.UseHttpLogging();
 app.UseMiddleware<ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.

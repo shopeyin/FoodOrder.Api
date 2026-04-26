@@ -4,6 +4,7 @@ using FoodOrder.Api.Domain.Entities;
 using FoodOrder.Api.Domain.ValueObjects;
 using FoodOrder.Api.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 
 namespace FoodOrder.Api.Application.Orders
@@ -13,13 +14,19 @@ namespace FoodOrder.Api.Application.Orders
         private readonly IOrderRepository _orders;
         private readonly ICustomerRepository _customers;
         private readonly IMenuItemRepository _menuItems;
+        private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IMenuItemRepository menuItems, IOrderRepository orders, ICustomerRepository customers)
+        public OrderService(
+            IMenuItemRepository menuItems,
+            IOrderRepository orders,
+            ICustomerRepository customers,
+            ILogger<OrderService> logger)
         {
 
             _orders = orders;
             _customers = customers;
             _menuItems = menuItems;
+            _logger = logger;
 
         }
 
@@ -33,6 +40,7 @@ namespace FoodOrder.Api.Application.Orders
 
             await _orders.AddAsync(order, ct);
             await _orders.SaveChangesAsync(ct);
+            _logger.LogInformation("Created order {OrderId} for customer {CustomerId}", order.OrderId, customerId);
 
             return order.OrderId;
         }
@@ -63,6 +71,11 @@ namespace FoodOrder.Api.Application.Orders
             }
 
             await _orders.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "Added {Quantity} item(s) of menu item {MenuItemId} to order {OrderId}",
+                quantity,
+                menuItemId,
+                orderId);
         }
 
 
@@ -92,6 +105,7 @@ namespace FoodOrder.Api.Application.Orders
             }
 
             await _orders.SaveChangesAsync(ct);
+            _logger.LogInformation("Order {OrderId} marked as paid with reference {PaymentReference}", orderId, paymentReference);
         }
 
 

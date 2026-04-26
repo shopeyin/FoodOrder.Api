@@ -20,10 +20,15 @@ namespace FoodOrder.Api.Controllers
         private readonly ICustomerOrderQueries _customerOrderQueries;
         private readonly ILogger<CustomersController> _logger;
 
-        public CustomersController(CustomerService svc, FoodOrderDbContext db, ILogger<CustomersController> logger)
+        public CustomersController(
+            CustomerService svc,
+            FoodOrderDbContext db,
+            ICustomerOrderQueries customerOrderQueries,
+            ILogger<CustomersController> logger)
         {
             _svc = svc;
             _db = db;
+            _customerOrderQueries = customerOrderQueries;
             _logger = logger;
         }
 
@@ -58,9 +63,7 @@ namespace FoodOrder.Api.Controllers
         [HttpGet("")]
         public IActionResult GetHello()
         {
-            Console.WriteLine("--------*********************------------------------");
-            Console.WriteLine("--------*********************------------------------");
-            Console.WriteLine("--------*********************------------------------");
+            _logger.LogInformation("Health-style hello endpoint called");
             return Content("Hello, this compose", "text/plain");
         }
     }
