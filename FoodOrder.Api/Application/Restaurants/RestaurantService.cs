@@ -23,7 +23,7 @@ namespace FoodOrder.Api.Application.Restaurants
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Restaurant name is required.");
 
-            var restaurant = new Restaurant(Guid.NewGuid(), name.Trim());
+            var restaurant = new Restaurant(name.Trim());
             _db.Restaurants.Add(restaurant);
             await _db.SaveChangesAsync(ct);
             _logger.LogInformation("Created restaurant {RestaurantId} with name {RestaurantName}", restaurant.RestaurantId, restaurant.Name);
@@ -33,26 +33,29 @@ namespace FoodOrder.Api.Application.Restaurants
 
         public async Task<Guid> AddMenuItem(Guid restaurantId, string name, decimal price, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Menu item name is required.");
-
             if (price < 0)
                 throw new DomainException("Price cannot be negative.");
 
-            var restaurantExists = await _db.Restaurants.AnyAsync(r => r.RestaurantId == restaurantId, ct);
-            if (!restaurantExists)
+            var restaurant = await _db.Restaurants
+                .Include(r => r.MenuItems)
+                .SingleOrDefaultAsync(r => r.RestaurantId == restaurantId, ct);
+
+            if (restaurant is null)
                 throw new KeyNotFoundException("Restaurant not found.");
 
-            // Optional: prevent duplicate active names per restaurant
-            var duplicate = await _db.MenuItems.AnyAsync(m =>
-                m.RestaurantId == restaurantId && m.Name == name.Trim() && m.IsActive, ct);
+            MenuItem menuItem;
 
-            if (duplicate)
-                throw new DomainException("An active menu item with the same name already exists for this restaurant.");
+            try
+            {
+                menuItem = restaurant.AddMenuItem(name, new Money(price));
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException)
+            {
+                throw new DomainException(ex.Message);
+            }
 
-            var menuItem = new MenuItem(Guid.NewGuid(), restaurantId, name.Trim(), new Money(price));
-            _db.MenuItems.Add(menuItem);
             await _db.SaveChangesAsync(ct);
+
             _logger.LogInformation(
                 "Added menu item {MenuItemId} to restaurant {RestaurantId} with name {MenuItemName}",
                 menuItem.MenuItemId,
@@ -62,20 +65,22 @@ namespace FoodOrder.Api.Application.Restaurants
             return menuItem.MenuItemId;
         }
 
+
         public async Task UpdateMenuItemPrice(Guid restaurantId, Guid menuItemId, decimal price, CancellationToken ct)
         {
             if (price < 0)
                 throw new DomainException("Price cannot be negative.");
 
-            var menuItem = await _db.MenuItems.SingleOrDefaultAsync(m =>
-                m.MenuItemId == menuItemId && m.RestaurantId == restaurantId, ct);
+            var restaurant = await _db.Restaurants
+                .Include(r => r.MenuItems)
+                .SingleOrDefaultAsync(r => r.RestaurantId == restaurantId, ct);
 
-            if (menuItem is null)
-                throw new KeyNotFoundException("Menu item not found for this restaurant.");
+            if (restaurant is null)
+                throw new KeyNotFoundException("Restaurant not found.");
 
             try
             {
-                menuItem.ChangePrice(new Money(price));
+                restaurant.ChangeMenuItemPrice(menuItemId, new Money(price));
             }
             catch (InvalidOperationException ex)
             {
@@ -83,6 +88,7 @@ namespace FoodOrder.Api.Application.Restaurants
             }
 
             await _db.SaveChangesAsync(ct);
+
             _logger.LogInformation(
                 "Updated price for menu item {MenuItemId} in restaurant {RestaurantId} to {Price}",
                 menuItemId,
@@ -92,15 +98,28 @@ namespace FoodOrder.Api.Application.Restaurants
 
         public async Task DeactivateMenuItem(Guid restaurantId, Guid menuItemId, CancellationToken ct)
         {
-            var menuItem = await _db.MenuItems.SingleOrDefaultAsync(m =>
-                m.MenuItemId == menuItemId && m.RestaurantId == restaurantId, ct);
+            var restaurant = await _db.Restaurants
+                .Include(r => r.MenuItems)
+                .SingleOrDefaultAsync(r => r.RestaurantId == restaurantId, ct);
 
-            if (menuItem is null)
-                throw new KeyNotFoundException("Menu item not found for this restaurant.");
+            if (restaurant is null)
+                throw new KeyNotFoundException("Restaurant not found.");
 
-            menuItem.Deactivate();
+            try
+            {
+                restaurant.DeactivateMenuItem(menuItemId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new DomainException(ex.Message);
+            }
+
             await _db.SaveChangesAsync(ct);
-            _logger.LogInformation("Deactivated menu item {MenuItemId} in restaurant {RestaurantId}", menuItemId, restaurantId);
+
+            _logger.LogInformation(
+                "Deactivated menu item {MenuItemId} in restaurant {RestaurantId}",
+                menuItemId,
+                restaurantId);
         }
 
 

@@ -7,11 +7,11 @@ namespace FoodOrder.Api.Data
     {
         public FoodOrderDbContext(DbContextOptions<FoodOrderDbContext> options) : base(options) { }
 
-        public DbSet<Customer> Customers => Set<Customer>();
-        public DbSet<Restaurant> Restaurants => Set<Restaurant>();
-        public DbSet<MenuItem> MenuItems => Set<MenuItem>();
-        public DbSet<Order> Orders => Set<Order>();
-        public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<Restaurant> Restaurants { get; set; }
+        public DbSet<MenuItem> MenuItems { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,17 +24,46 @@ namespace FoodOrder.Api.Data
             modelBuilder.Entity<Restaurant>(b =>
             {
                 b.HasKey(x => x.RestaurantId);
-                b.Property(x => x.Name).HasMaxLength(200).IsRequired();
+
+                b.Property(x => x.RestaurantId)
+                    .ValueGeneratedNever();
+
+                b.Property(x => x.Name)
+                    .HasMaxLength(200)
+                    .IsRequired();
+
+                b.HasMany(x => x.MenuItems)
+                    .WithOne()
+                    .HasForeignKey(x => x.RestaurantId)
+                    .IsRequired()
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<MenuItem>(b =>
             {
                 b.HasKey(x => x.MenuItemId);
-                b.Property(x => x.Name).HasMaxLength(200).IsRequired();
-                b.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
-                b.Property(x => x.PriceAmount).HasColumnType("decimal(18,2)").IsRequired();
+
+                b.Property(x => x.MenuItemId)
+                .ValueGeneratedNever();
+
+                b.Property(x => x.RestaurantId)
+                .IsRequired();
+
+                b.Property(x => x.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+                b.Property(x => x.PriceAmount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+                b.Property(x => x.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
                 b.HasIndex(x => new { x.RestaurantId, x.Name });
             });
+
 
             modelBuilder.Entity<Order>(b =>
             {

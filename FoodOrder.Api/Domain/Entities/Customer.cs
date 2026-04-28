@@ -3,7 +3,7 @@
     public class Customer
     {
         public Guid CustomerId { get; private set; }
-        public string Name { get; private set; } = null!;
+        public string Name { get; private set; }
 
         private Customer() { } // EF
 
@@ -12,14 +12,6 @@
             CustomerId = Guid.NewGuid();
             Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentException("Name required.") : name;
         }
-
-        internal Customer(Guid id, string name)
-        {
-            CustomerId = id;
-            Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentException("Name required.") : name;
-        }
     }
-
-
 
 }

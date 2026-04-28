@@ -20,7 +20,7 @@ namespace FoodOrder.Api.Application.Customers
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Customer name is required.");
 
-            var customer = new Customer(Guid.NewGuid(), name.Trim());
+            var customer = new Customer(name.Trim());
             _db.Customers.Add(customer);
             await _db.SaveChangesAsync(ct);
             _logger.LogInformation("Created customer {CustomerId} with name {CustomerName}", customer.CustomerId, customer.Name);

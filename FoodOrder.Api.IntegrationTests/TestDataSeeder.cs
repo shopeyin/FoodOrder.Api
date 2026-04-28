@@ -17,13 +17,13 @@ public static class TestDataSeeder
         if (db.Customers.Any())
             return;
 
-        var customer = new Customer(CustomerId, "Test Customer");
-        var restaurant = new Restaurant(RestaurantId, "Test Restaurant");
-        var menuItem = new MenuItem(MenuItemId, RestaurantId, "Burger", new Money(10.50m));
+        var customer = new Customer("Test Customer");
+        var restaurant = new Restaurant("Test Restaurant");
+
+        restaurant.AddMenuItem("Classic Burger", new Money(9.99m));
 
         db.Customers.Add(customer);
         db.Restaurants.Add(restaurant);
-        db.MenuItems.Add(menuItem);
         db.SaveChanges();
     }
 }

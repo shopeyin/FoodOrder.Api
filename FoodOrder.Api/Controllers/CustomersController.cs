@@ -15,18 +15,14 @@ namespace FoodOrder.Api.Controllers
     [ApiController]
     public sealed class CustomersController : ControllerBase
     {
-        private readonly CustomerService _svc;
+        private readonly CustomerService _customerService;
         private readonly FoodOrderDbContext _db;
         private readonly ICustomerOrderQueries _customerOrderQueries;
         private readonly ILogger<CustomersController> _logger;
 
-        public CustomersController(
-            CustomerService svc,
-            FoodOrderDbContext db,
-            ICustomerOrderQueries customerOrderQueries,
-            ILogger<CustomersController> logger)
+        public CustomersController(CustomerService customerService, FoodOrderDbContext db, ICustomerOrderQueries customerOrderQueries, ILogger<CustomersController> logger)
         {
-            _svc = svc;
+            _customerService = customerService;
             _db = db;
             _customerOrderQueries = customerOrderQueries;
             _logger = logger;
@@ -35,7 +31,7 @@ namespace FoodOrder.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<CreateCustomerResponse>> Create([FromBody] CreateCustomerRequest req, CancellationToken ct)
         {
-            var id = await _svc.CreateCustomer(req.Name, ct);
+            var id = await _customerService.CreateCustomer(req.Name, ct);
             return CreatedAtAction(nameof(GetById), new { customerId = id }, new CreateCustomerResponse(id));
         }
 

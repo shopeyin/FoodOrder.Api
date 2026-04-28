@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodOrder.Api.Data.Migrations
 {
     [DbContext(typeof(FoodOrderDbContext))]
-    [Migration("20260213114423_InitialCreate")]
+    [Migration("20260427181653_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -44,8 +44,12 @@ namespace FoodOrder.Api.Data.Migrations
             modelBuilder.Entity("FoodOrder.Api.Domain.Entities.MenuItem", b =>
                 {
                     b.Property<Guid>("MenuItemId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -114,7 +118,6 @@ namespace FoodOrder.Api.Data.Migrations
             modelBuilder.Entity("FoodOrder.Api.Domain.Entities.Restaurant", b =>
                 {
                     b.Property<Guid>("RestaurantId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
@@ -125,6 +128,15 @@ namespace FoodOrder.Api.Data.Migrations
                     b.HasKey("RestaurantId");
 
                     b.ToTable("Restaurants");
+                });
+
+            modelBuilder.Entity("FoodOrder.Api.Domain.Entities.MenuItem", b =>
+                {
+                    b.HasOne("FoodOrder.Api.Domain.Entities.Restaurant", null)
+                        .WithMany("MenuItems")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FoodOrder.Api.Domain.Entities.OrderItem", b =>
@@ -139,6 +151,11 @@ namespace FoodOrder.Api.Data.Migrations
             modelBuilder.Entity("FoodOrder.Api.Domain.Entities.Order", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("FoodOrder.Api.Domain.Entities.Restaurant", b =>
+                {
+                    b.Navigation("MenuItems");
                 });
 #pragma warning restore 612, 618
         }
