@@ -1,4 +1,6 @@
-﻿using FoodOrder.Api.Domain.Entities;
+﻿using FoodOrder.Api.Modules.Customers.Domain;
+using FoodOrder.Api.Modules.Ordering.Domain;
+using FoodOrder.Api.Modules.Restaurants.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace FoodOrder.Api.Data

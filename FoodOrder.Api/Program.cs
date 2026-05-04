@@ -1,10 +1,16 @@
-using FoodOrder.Api.Application.Customers;
-using FoodOrder.Api.Application.Orders;
-using FoodOrder.Api.Application.Restaurants;
 using FoodOrder.Api.Common.Exceptions;
 using FoodOrder.Api.Data;
-using FoodOrder.Api.Repositories.Abstractions;
-using FoodOrder.Api.Repositories.Efcore;
+using FoodOrder.Api.Modules.Customers.Application;
+using FoodOrder.Api.Modules.Customers.Infrastructure;
+using FoodOrder.Api.Modules.Ordering.Application;
+using FoodOrder.Api.Modules.Ordering.Application.Abstraction;
+using FoodOrder.Api.Modules.Ordering.Application.Abstractions;
+using FoodOrder.Api.Modules.Ordering.Infrastructure;
+using FoodOrder.Api.Modules.Ordering.Infrastructure.Abstraction;
+using FoodOrder.Api.Modules.Payments.Application.Abstractions;
+using FoodOrder.Api.Modules.Payments.Infrastructure;
+using FoodOrder.Api.Modules.Restaurants.Application;
+using FoodOrder.Api.Modules.Restaurants.Infrastructure;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,8 +34,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IOrderQueries, EfOrderQueries>();
 builder.Services.AddScoped<ICustomerOrderQueries, EfCustomerOrderQueries>();
 builder.Services.AddScoped<IOrderRepository, EfOrderRepository>();
-builder.Services.AddScoped<IMenuItemRepository, EfMenuItemRepository>();
-builder.Services.AddScoped<ICustomerRepository, EfCustomerRepository>();
+builder.Services.AddScoped<IMenuItemReader, EfMenuItemReader>();
+builder.Services.AddScoped<ICustomerReader, EfCustomerReader>();
+builder.Services.AddScoped<IPaymentProcessor, FakePaymentProcessor>();
+
+
 
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<CustomerService>();
